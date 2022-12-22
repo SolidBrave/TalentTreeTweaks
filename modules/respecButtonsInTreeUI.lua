@@ -84,6 +84,7 @@ do
         if GetSpecialization() == specIndex then return end
         if ClassTalentHelper and ClassTalentHelper.SwitchToSpecializationByIndex then
             ClassTalentHelper.SwitchToSpecializationByIndex(specIndex)
+            ClassTalentFrame:Hide();
             return
         end
         SetSpecialization(specIndex)
