@@ -3,28 +3,43 @@ local _, TTT = ...;
 local Main = TTT.Main;
 --- @type TalentTreeTweaks_Util
 local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('UnlockRestrictions', 'AceHook-3.0');
 Module.ignoredErrors = {
     [ERR_TALENT_FAILED_IN_COMBAT] = true,
 };
+Module.textsToUnlock = {};
+
+function Module:OnInitialize()
+    local texts = {
+        TALENT_FRAME_DROP_DOWN_EXPORT,
+        TALENT_FRAME_DROP_DOWN_EXPORT_CLIPBOARD,
+        TALENT_FRAME_DROP_DOWN_EXPORT_CHAT_LINK,
+    };
+    for _, text in pairs(texts) do
+        self.textsToUnlock[text] = true;
+    end
+end
 
 function Module:OnEnable()
-    EventUtil.ContinueOnAddOnLoaded('Blizzard_ClassTalentUI', function()
+    self.enabled = true;
+    Util:OnClassTalentUILoad(function()
         self:SetupHook();
     end);
 end
 
 function Module:OnDisable()
+    self.enabled = false;
     self:UnhookAll();
 end
 
 function Module:GetDescription()
-    return 'Unlocks several restrictions on the talent tree UI, such as being able to spend points while in combat, and being able to share your build without spending all points.';
+    return L['Unlocks several restrictions on the talent tree UI, such as being able to spend points while in combat, and being able to share your build without spending all points.'];
 end
 
 function Module:GetName()
-    return 'Unlock Restrictions';
+    return L['Unlock Restrictions'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -44,8 +59,8 @@ function Module:GetOptions(defaultOptionsTable, db)
 
     defaultOptionsTable.args.unlockShareButton = {
         type = 'toggle',
-        name = 'Unlock Share Button',
-        desc = 'Unlocks the share button, so you can share your build without spending all points.',
+        name = L['Unlock Share Button'],
+        desc = L['Unlocks the share button, so you can share your build without spending all points.'],
         order = 5,
         width = 'double',
         get = get,
@@ -53,8 +68,8 @@ function Module:GetOptions(defaultOptionsTable, db)
     };
     defaultOptionsTable.args.unlockInCombatSpending = {
         type = 'toggle',
-        name = 'Unlock In Combat Spending',
-        desc = 'Unlocks the talent buttons, so you can reallocate points while in combat.',
+        name = L['Unlock In Combat Spending'],
+        desc = L['Unlocks the talent buttons, so you can reallocate points while in combat.'],
         order = 6,
         width = 'double',
         get = get,
@@ -73,16 +88,12 @@ end
 function Module:UpdateShareButton()
     local dropdown = ClassTalentFrame.TalentsTab.LoadoutDropDown;
     for _, sentinelInfo in pairs(dropdown.sentinelKeyToInfo) do
-        if sentinelInfo.text == TALENT_FRAME_DROP_DOWN_EXPORT then
-            if not self.oldExportDisabledCallback then
-                self.oldExportDisabledCallback = sentinelInfo.disabledCallback;
-            end
-            if self.db.unlockShareButton then
-                sentinelInfo.disabledCallback = function() return false; end;
-            elseif sentinelInfo.disabledCallback ~= self.oldExportDisabledCallback then
-                sentinelInfo.disabledCallback = self.oldExportDisabledCallback;
-            end
-            break
+        if self.textsToUnlock[sentinelInfo.text] then
+            self.textsToUnlock[sentinelInfo.text] = nil;
+            local oldDisabledCallback = sentinelInfo.disabledCallback;
+            sentinelInfo.disabledCallback = function(...)
+                return not ((self.enabled and self.db.unlockShareButton) or not oldDisabledCallback(...));
+            end;
         end
     end
 end

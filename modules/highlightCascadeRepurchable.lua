@@ -1,6 +1,9 @@
 local _, TTT = ...;
 --- @type TalentTreeTweaks_Main
 local Main = TTT.Main;
+--- @type TalentTreeTweaks_Util
+local Util = TTT.Util;
+local L = TTT.L;
 
 local Module = Main:NewModule('HighlightCascadeRepurchable');
 Module.enabled = false;
@@ -8,7 +11,7 @@ Module.enabled = false;
 function Module:OnEnable()
     self.enabled = true;
     self.buttonTextures = self.buttonTextures or {};
-    EventUtil.ContinueOnAddOnLoaded('Blizzard_ClassTalentUI', function()
+    Util:OnClassTalentUILoad(function()
         self:SetupHook();
     end);
 end
@@ -20,14 +23,17 @@ function Module:OnDisable()
             texture:Hide();
         end
     end
+    if ClassTalentFrame and ClassTalentFrame.TalentsTab then
+        ClassTalentFrame.TalentsTab:UnregisterCallback(TalentFrameBaseMixin.Event.TalentButtonAcquired, self);
+    end
 end
 
 function Module:GetDescription()
-    return 'Adds a more obvious highlight when you can relearn talents in bulk by shift-clicking them.';
+    return L['Adds a more obvious highlight when you can relearn talents in bulk by shift-clicking them.'];
 end
 
 function Module:GetName()
-    return 'Highlight Cascade Repurchable';
+    return L['Highlight Cascade Repurchable'];
 end
 
 function Module:GetOptions(defaultOptionsTable, db)
@@ -58,8 +64,8 @@ function Module:GetOptions(defaultOptionsTable, db)
     end
     defaultOptionsTable.args.color = {
         type = 'color',
-        name = 'Color',
-        desc = 'Color of the highlight',
+        name = COLOR,
+        desc = L['Color of the highlight'],
         hasAlpha = true,
         get = GetColor,
         set = SetColor,
@@ -67,8 +73,8 @@ function Module:GetOptions(defaultOptionsTable, db)
     };
     defaultOptionsTable.args.reset = {
         type = 'execute',
-        name = 'Reset',
-        desc = 'Reset the color to default',
+        name = RESET,
+        desc = L['Reset the color to default'],
         func = function()
             self.db.color = defaults.color;
             self:UpdateColors();
